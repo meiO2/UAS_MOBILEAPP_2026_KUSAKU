@@ -236,7 +236,7 @@ class _ChatSiPintarPageState extends State<ChatSiPintarPage> {
   Future<void> _onSimpanPengaturan() async {
     try {
       final payload = _categoryOrder.map((cat) => {
-        "id": _categoryIds[cat],          // ← now included
+        "id": _categoryIds[cat],
         "name": cat,
         "percentage": _categoryPercentages[cat] ?? 0,
         "enabled": _categoryEnabled[cat] ?? false,

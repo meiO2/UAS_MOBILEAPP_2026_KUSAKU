@@ -84,7 +84,6 @@ class _TransferApi {
   }
 }
 
-
 class TransferPage extends StatefulWidget {
   final String? prefilledRecipientPhone;
   final String? prefilledRecipientName;
