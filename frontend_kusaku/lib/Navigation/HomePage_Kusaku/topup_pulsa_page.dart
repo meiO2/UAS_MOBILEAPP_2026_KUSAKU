@@ -379,8 +379,6 @@ class _TopUpPulsaPageState extends State<TopUpPulsaPage> {
   }
 }
 
-// --- unchanged widgets below ---
-
 class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
