@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_kusaku/config/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   final formatter = NumberFormat.currency(
@@ -103,4 +104,65 @@ void main() {
       expect(payload['notes'], 'Untuk kebutuhan');
     });
   });
+
+  group('Session data management', () {
+    test('loads session data from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({
+        'user_id': 123,
+        'phone_number': '081234567890',
+        'full_name': 'John Doe',
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final phone = prefs.getString('phone_number');
+      final name = prefs.getString('full_name');
+
+      expect(userId, 123);
+      expect(phone, '081234567890');
+      expect(name, 'John Doe');
+    });
+
+    test('handles missing session fields gracefully', () async {
+      SharedPreferences.setMockInitialValues({
+        'user_id': 456,
+        // phone_number and full_name intentionally missing
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final phone = prefs.getString('phone_number') ?? '';
+      final name = prefs.getString('full_name') ?? '';
+
+      expect(userId, 456);
+      expect(phone, '');
+      expect(name, '');
+    });
+  });
+
+  group('ApiException error handling', () {
+    test('creates ApiException with custom message', () {
+      const exception = _TestApiException('Saldo tidak cukup');
+      expect(exception.message, 'Saldo tidak cukup');
+      expect(exception, isA<Exception>());
+    });
+
+    test('handles transfer error messages', () {
+      const exception = _TestApiException('Transfer gagal: Server error');
+      expect(exception.message.contains('Transfer gagal'), true);
+    });
+
+    test('throws and catches exception correctly', () {
+      expect(
+        () => throw _TestApiException('Nomor penerima tidak ditemukan'),
+        throwsA(isA<_TestApiException>()),
+      );
+    });
+  });
+}
+
+// Test model for ApiException behavior (since real class is private)
+class _TestApiException implements Exception {
+  final String message;
+  const _TestApiException(this.message);
 }

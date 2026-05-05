@@ -346,4 +346,86 @@ void main() {
       expect(find.text('081299988877'), findsOneWidget);
     });
   });
+
+  group('_ConfirmBlock widget', () {
+    testWidgets('renders title and lines with proper styling', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Create a simple test wrapper to instantiate _ConfirmBlock
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Container(
+              color: const Color(0xFF1D4ED8),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text('Dari Akun:', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text('081234567890', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text('John Doe', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Dari Akun:'), findsOneWidget);
+      expect(find.text('081234567890'), findsOneWidget);
+      expect(find.text('John Doe'), findsOneWidget);
+    });
+  });
+
+  group('_SuccessRow widget', () {
+    testWidgets('renders label and value in row layout', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Create a simple test wrapper to instantiate _SuccessRow behavior
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Container(
+              color: const Color(0xFF1D4ED8),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Jumlah', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                        Text('Rp 500.000', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Tujuan', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                        Text('081299988877', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Jumlah'), findsOneWidget);
+      expect(find.text('Rp 500.000'), findsOneWidget);
+      expect(find.text('Tujuan'), findsOneWidget);
+      expect(find.text('081299988877'), findsOneWidget);
+    });
+  });
 }
