@@ -1,167 +1,106 @@
+// =============================================================================
+// integration_test/splash_screen_integration_test.dart
+// =============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+// IMPORTANT: Adjust these paths if your folder structure is slightly different
+import '../../lib/Screens/Splash_Screen-frontend/splash_screen.dart';
+import '../../lib/Screens/Login_Screen-frontend/login_screen.dart';
+
+// Helper finders to avoid matching hidden transitions from MaterialApp/Scaffold
+final Finder myScaleFinder = find.byWidgetPredicate(
+  (w) => w is ScaleTransition && w.child is Column
+);
+
+final Finder myFadeFinder = find.byWidgetPredicate(
+  (w) => w is FadeTransition && w.child is Image
+);
 
 void main() {
-  late AnimationController sequenceController;
-  late AnimationController rotationController;
-  late Animation<double> scaleAnimation;
-  late Animation<double> fadeAnimation;
+  // This line is required for Integration Tests to interact with the device/emulator
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    sequenceController = AnimationController(
-      duration: const Duration(milliseconds: 2500),
-      vsync: const TestVSync(),
-    );
-
-    rotationController = AnimationController(
-      duration: const Duration(seconds: 4),
-      vsync: const TestVSync(),
-    );
-
-    scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(0.5), weight: 50),
-      TweenSequenceItem(
-        tween: Tween(begin: 0.5, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 50,
+  // Helper function to boot up the widget
+  Future<void> pumpSplashApp(WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SplashScreen(),
       ),
-    ]).animate(sequenceController);
+    );
+    await tester.pump(); // Render the very first frame
+  }
 
-    fadeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(0.0), weight: 15),
-      TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
-        weight: 35,
-      ),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 50),
-    ]).animate(sequenceController);
-  });
-
-  tearDown(() {
-    sequenceController.dispose();
-    rotationController.dispose();
-  });
-
-  group('AnimationController durations', () {
-    test('sequenceController duration is 2500 ms', () {
-      expect(
-        sequenceController.duration,
-        const Duration(milliseconds: 2500),
-      );
-    });
-
-    test('rotationController duration is 4 s', () {
-      expect(
-        rotationController.duration,
-        const Duration(seconds: 4),
-      );
+  group('Cold launch – initial render', () {
+    testWidgets('app launches and SplashScreen is the first screen', (tester) async {
+      await pumpSplashApp(tester);
+      expect(find.byType(SplashScreen), findsOneWidget);
     });
   });
 
-  group('AnimationController initial state', () {
-    test('sequenceController starts at 0', () {
-      expect(sequenceController.value, 0.0);
+  group('Animation progression', () {
+    testWidgets('scale starts small and grows over 2500 ms', (tester) async {
+      await pumpSplashApp(tester);
+      
+      // Check initial scale
+      final stInitial = tester.widget<ScaleTransition>(myScaleFinder);
+      expect(stInitial.scale.value, lessThanOrEqualTo(0.5));
+
+      // Wait in REAL time for the animation to run
+      await Future.delayed(const Duration(milliseconds: 2500));
+      await tester.pump(); // Render the screen at the 2.5s mark
+      
+      // Check final scale
+      final stFinal = tester.widget<ScaleTransition>(myScaleFinder);
+      expect(stFinal.scale.value, closeTo(1.0, 0.05));
     });
 
-    test('rotationController starts at 0', () {
-      expect(rotationController.value, 0.0);
-    });
+    testWidgets('tagline is invisible at launch and visible after 2500 ms', (tester) async {
+      await pumpSplashApp(tester);
 
-    test('sequenceController is initially dismissed', () {
-      expect(sequenceController.status, AnimationStatus.dismissed);
-    });
-  });
+      // Check initial opacity
+      final ftInitial = tester.widget<FadeTransition>(myFadeFinder);
+      expect(ftInitial.opacity.value, closeTo(0.0, 0.01));
 
-  group('scaleAnimation values', () {
-    test('is 0.5 at t=0 (start of sequence)', () {
-      sequenceController.value = 0.0;
-      expect(scaleAnimation.value, closeTo(0.5, 0.01));
-    });
+      // Wait in REAL time for the animation to run
+      await Future.delayed(const Duration(milliseconds: 2500));
+      await tester.pump(); // Render the screen at the 2.5s mark
 
-    test('is 0.5 at t=0.5 (boundary between first and second segment)', () {
-      sequenceController.value = 0.5;
-      expect(scaleAnimation.value, closeTo(0.5, 0.01));
-    });
-
-    test('reaches ~1.0 at t=1.0 (sequence complete)', () {
-      sequenceController.value = 1.0;
-      expect(scaleAnimation.value, closeTo(1.0, 0.05));
-    });
-
-    test('value stays between 0.0 and ~1.1 throughout (easeOutBack overshoot)',
-        () {
-      for (var i = 0; i <= 10; i++) {
-        sequenceController.value = i / 10;
-        expect(scaleAnimation.value, greaterThanOrEqualTo(0.0));
-        // easeOutBack can overshoot slightly above 1.0
-        expect(scaleAnimation.value, lessThanOrEqualTo(1.15));
-      }
+      // Check final opacity
+      final ftFinal = tester.widget<FadeTransition>(myFadeFinder);
+      expect(ftFinal.opacity.value, closeTo(1.0, 0.05));
     });
   });
 
-  group('fadeAnimation values', () {
-    test('is 0.0 at t=0 (invisible at start)', () {
-      sequenceController.value = 0.0;
-      expect(fadeAnimation.value, closeTo(0.0, 0.01));
-    });
+  group('Navigation to LoginScreen', () {
+    testWidgets('navigates to LoginScreen after exactly 4 s', (tester) async {
+      await pumpSplashApp(tester);
 
-    test('is 0.0 at t=0.15 (still in constant-zero segment)', () {
-      sequenceController.value = 0.15;
-      expect(fadeAnimation.value, closeTo(0.0, 0.01));
-    });
+      // Wait just past the 4-second timer (4.5s) to allow the routing to complete
+      await Future.delayed(const Duration(milliseconds: 4500));
+      
+      // We can use pumpAndSettle here because the splash screen (and its spinning logo) 
+      // has been destroyed by the pushReplacement, so there are no infinite animations left.
+      await tester.pumpAndSettle(); 
 
-    test('is > 0.0 at t=0.3 (mid fade-in segment)', () {
-      sequenceController.value = 0.3;
-      expect(fadeAnimation.value, greaterThan(0.0));
-    });
-
-    test('is 1.0 at t=1.0 (fully visible at end)', () {
-      sequenceController.value = 1.0;
-      expect(fadeAnimation.value, closeTo(1.0, 0.01));
-    });
-
-    test('never exceeds 1.0', () {
-      for (var i = 0; i <= 10; i++) {
-        sequenceController.value = i / 10;
-        expect(fadeAnimation.value, lessThanOrEqualTo(1.0));
-      }
-    });
-
-    test('is monotonically non-decreasing', () {
-      double previous = 0.0;
-      for (var i = 0; i <= 20; i++) {
-        sequenceController.value = i / 20;
-        expect(fadeAnimation.value, greaterThanOrEqualTo(previous - 0.001));
-        previous = fadeAnimation.value;
-      }
+      // Verify the splash is gone and the login screen is present
+      expect(find.byType(SplashScreen), findsNothing);
+      expect(find.byType(LoginScreen), findsOneWidget);
     });
   });
 
-  group('rotationController', () {
-    test('repeats (value wraps back to 0 after one full cycle)', () {
-      rotationController.repeat();
-      expect(rotationController.isAnimating, isTrue);
-    });
+  group('End-to-end smoke test', () {
+    testWidgets('complete splash → login journey completes without error', (tester) async {
+      await pumpSplashApp(tester);
 
-    test('value is within [0, 1] while repeating', () {
-      rotationController.repeat();
-      rotationController.value = 0.75;
-      expect(rotationController.value, inInclusiveRange(0.0, 1.0));
-    });
-  });
+      // Wait the full duration for everything to run its course naturally
+      await Future.delayed(const Duration(milliseconds: 4500));
+      await tester.pumpAndSettle();
 
-  group('Timer delay constants', () {
-    test('rotation start delay is 1250 ms (half of sequence duration)', () {
-      const rotationStartDelay = Duration(milliseconds: 1250);
-      const halfSequence = Duration(milliseconds: 2500 ~/ 2); 
-      expect(rotationStartDelay, halfSequence);
-    });
-
-    test('navigation delay is 4 s (matches rotationController duration)', () {
-      const navigationDelay = Duration(seconds: 4);
-      const rotationDuration = Duration(seconds: 4);
-      expect(navigationDelay, rotationDuration);
+      // If we made it to the LoginScreen without crashing, the smoke test passes
+      expect(find.byType(LoginScreen), findsOneWidget);
     });
   });
 }

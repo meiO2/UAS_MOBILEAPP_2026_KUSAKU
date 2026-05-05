@@ -1,18 +1,5 @@
 // =============================================================================
 // test/splash_screen/splash_screen_widget_test.dart
-//
-// Widget tests for SplashScreen — all tests guaranteed to pass green.
-//
-// Root cause of previous failures:
-//   Every testWidgets call gets its own FakeAsync zone. SplashScreen.initState
-//   registers a Timer(4 s) and a Future.delayed(1250 ms). If a test ends
-//   without advancing fake-time past those deadlines, Flutter asserts
-//   "A Timer is still pending even after the widget tree was disposed."
-//
-// Fix: every test that does NOT intentionally advance to >= 4 s must call
-//   drainTimers(tester) before returning so all pending fakes are flushed.
-//
-// Run: flutter test test/splash_screen/splash_screen_widget_test.dart
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -20,7 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../lib/Screens/Splash_Screen-frontend/splash_screen.dart';
 
-// ── Fake destination so the real LoginScreen is never imported ───────────────
+// ── Fake destination so MaterialPageRoute is satisfied, though SplashScreen ──
+// ── uses PageRouteBuilder which directly mounts the real LoginScreen. ────────
 class _FakeLoginScreen extends StatelessWidget {
   const _FakeLoginScreen();
   @override
@@ -28,7 +16,6 @@ class _FakeLoginScreen extends StatelessWidget {
       const Scaffold(body: Center(child: Text('LoginScreen')));
 }
 
-// ── Mount SplashScreen with a route stub for every downstream push ────────────
 Future<void> pumpSplash(WidgetTester tester) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -38,16 +25,30 @@ Future<void> pumpSplash(WidgetTester tester) async {
       ),
     ),
   );
-  // Flush initState synchronous work; fake-clock is still at t = 0.
   await tester.pump(Duration.zero);
 }
 
-// ── Drain ALL pending timers created by SplashScreen (1250 ms + 4 s) ─────────
-// Must be called at the end of any test that does not already reach t >= 4 s.
 Future<void> drainTimers(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 4));
   await tester.pumpAndSettle();
 }
+
+// ── NEW: Pinpoint Finders ────────────────────────────────────────────────────
+// Flutter's Scaffold secretly builds its own hidden Fade/Scale/Rotation 
+// transitions for the FloatingActionButton (even when one isn't used!).
+// By checking the 'child' property, we guarantee we only find YOUR animations.
+
+final Finder myScaleFinder = find.byWidgetPredicate(
+  (w) => w is ScaleTransition && w.child is Column
+);
+
+final Finder myRotationFinder = find.byWidgetPredicate(
+  (w) => w is RotationTransition && w.child is Image
+);
+
+final Finder myFadeFinder = find.byWidgetPredicate(
+  (w) => w is FadeTransition && w.child is Image
+);
 
 // =============================================================================
 void main() {
@@ -187,50 +188,35 @@ void main() {
   group('Animation widgets', () {
     testWidgets('ScaleTransition exists', (tester) async {
       await pumpSplash(tester);
-      expect(find.byType(ScaleTransition), findsOneWidget);
+      expect(myScaleFinder, findsOneWidget);
       await drainTimers(tester);
     });
 
     testWidgets('RotationTransition exists', (tester) async {
       await pumpSplash(tester);
-      expect(find.byType(RotationTransition), findsOneWidget);
+      expect(myRotationFinder, findsOneWidget);
       await drainTimers(tester);
     });
 
     testWidgets('FadeTransition exists', (tester) async {
       await pumpSplash(tester);
-      expect(find.byType(FadeTransition), findsOneWidget);
+      expect(myFadeFinder, findsOneWidget);
       await drainTimers(tester);
     });
 
     testWidgets('RotationTransition wraps the Logo image', (tester) async {
       await pumpSplash(tester);
-      expect(
-        find.ancestor(
-          of: find.byWidgetPredicate((w) =>
-              w is Image &&
-              w.image is AssetImage &&
-              (w.image as AssetImage).assetName == 'assets/images/Logo.png'),
-          matching: find.byType(RotationTransition),
-        ),
-        findsOneWidget,
-      );
+      final rotationWidget = tester.widget<RotationTransition>(myRotationFinder);
+      final imageWidget = rotationWidget.child as Image;
+      expect((imageWidget.image as AssetImage).assetName, 'assets/images/Logo.png');
       await drainTimers(tester);
     });
 
     testWidgets('FadeTransition wraps the tagline image', (tester) async {
       await pumpSplash(tester);
-      expect(
-        find.ancestor(
-          of: find.byWidgetPredicate((w) =>
-              w is Image &&
-              w.image is AssetImage &&
-              (w.image as AssetImage).assetName ==
-                  'assets/images/Ayo Atur Pengeluaranmu!.png'),
-          matching: find.byType(FadeTransition),
-        ),
-        findsOneWidget,
-      );
+      final fadeWidget = tester.widget<FadeTransition>(myFadeFinder);
+      final imageWidget = fadeWidget.child as Image;
+      expect((imageWidget.image as AssetImage).assetName, 'assets/images/Ayo Atur Pengeluaranmu!.png');
       await drainTimers(tester);
     });
   });
@@ -239,26 +225,23 @@ void main() {
   group('Animation values over time', () {
     testWidgets('ScaleTransition starts at ≤ 0.5', (tester) async {
       await pumpSplash(tester);
-      final st =
-          tester.widget<ScaleTransition>(find.byType(ScaleTransition));
+      final st = tester.widget<ScaleTransition>(myScaleFinder);
       expect(st.scale.value, lessThanOrEqualTo(0.5));
       await drainTimers(tester);
     });
 
     testWidgets('ScaleTransition reaches ~1.0 after 2500 ms', (tester) async {
       await pumpSplash(tester);
-      await tester.pump(const Duration(milliseconds: 2500));
-      final st =
-          tester.widget<ScaleTransition>(find.byType(ScaleTransition));
+      await Future.delayed(const Duration(milliseconds: 2500));
+      await tester.pump(); // Renders the frame at the 2.5-second mark
+      final st = tester.widget<ScaleTransition>(myScaleFinder);
       expect(st.scale.value, closeTo(1.0, 0.05));
-      // Already at 2500 ms; still need to reach 4 s to drain the navigation timer
       await drainTimers(tester);
     });
 
     testWidgets('FadeTransition starts at opacity 0', (tester) async {
       await pumpSplash(tester);
-      final ft =
-          tester.widget<FadeTransition>(find.byType(FadeTransition));
+      final ft = tester.widget<FadeTransition>(myFadeFinder);
       expect(ft.opacity.value, closeTo(0.0, 0.01));
       await drainTimers(tester);
     });
@@ -267,8 +250,7 @@ void main() {
         (tester) async {
       await pumpSplash(tester);
       await tester.pump(const Duration(milliseconds: 2500));
-      final ft =
-          tester.widget<FadeTransition>(find.byType(FadeTransition));
+      final ft = tester.widget<FadeTransition>(myFadeFinder);
       expect(ft.opacity.value, closeTo(1.0, 0.05));
       await drainTimers(tester);
     });
@@ -277,11 +259,8 @@ void main() {
         (tester) async {
       await pumpSplash(tester);
       await tester.pump(const Duration(milliseconds: 1250));
-      final rt = tester.widget<RotationTransition>(
-        find.byType(RotationTransition),
-      );
+      final rt = tester.widget<RotationTransition>(myRotationFinder);
       expect(rt.turns.isAnimating, isTrue);
-      // Drain the remaining 2750 ms to the 4 s navigation timer
       await drainTimers(tester);
     });
   });
@@ -296,7 +275,6 @@ void main() {
               (p) => p.padding == const EdgeInsets.only(bottom: 50.0))
           .toList();
       expect(paddings, isNotEmpty);
-      // MUST drain — this was the test that originally failed with timersPending
       await drainTimers(tester);
     });
   });
@@ -305,23 +283,21 @@ void main() {
   group('Navigation', () {
     testWidgets('still shows SplashScreen before 4 s', (tester) async {
       await pumpSplash(tester);
-      // Advance to just before the timer fires
       await tester.pump(const Duration(seconds: 3));
       expect(find.byType(SplashScreen), findsOneWidget);
-      // Drain the remaining 1 s + settle so no timer is left pending
       await drainTimers(tester);
     });
 
     testWidgets('navigates away exactly at 4 s', (tester) async {
       await pumpSplash(tester);
-      // Fire the 4 s timer
       await tester.pump(const Duration(seconds: 4));
-      // The PageRouteBuilder uses transitionDuration: Duration.zero so
-      // pumpAndSettle completes in one frame
       await tester.pumpAndSettle();
+      
       expect(find.byType(SplashScreen), findsNothing);
-      expect(find.text('LoginScreen'), findsOneWidget);
-      // No pending timers remain at this point — no drainTimers needed
+      expect(
+        find.byWidgetPredicate((w) => w.runtimeType.toString() == 'LoginScreen'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('uses pushReplacement (SplashScreen is not in back stack)',
@@ -332,7 +308,6 @@ void main() {
       final NavigatorState nav =
           tester.state(find.byType(Navigator));
       expect(nav.canPop(), isFalse);
-      // No pending timers remain after navigation
     });
   });
 
@@ -342,25 +317,16 @@ void main() {
         'no setState-after-dispose error when unmounted before timer',
         (tester) async {
       await pumpSplash(tester);
-      // Unmount before the 4 s timer fires
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-      // Advance past BOTH the 1250 ms and the 4 s callbacks so no timers remain.
-      // The widget is already gone so mounted guards prevent any setState crash.
       await tester.pump(const Duration(seconds: 5));
-      // If no exception is thrown the test passes
     });
 
     testWidgets('rebuilds correctly after a hot-reload-style pump',
         (tester) async {
       await pumpSplash(tester);
       await tester.pump(const Duration(milliseconds: 500));
-      // Pump the same widget again (simulates hot reload).
-      // pumpWidget replaces the tree, which disposes the old SplashScreen
-      // and mounts a new one — creating new timers. We must drain the new
-      // instance's timers at the end.
       await pumpSplash(tester);
       expect(find.byType(SplashScreen), findsOneWidget);
-      // Drain all timers from the freshly mounted SplashScreen
       await drainTimers(tester);
     });
   });
