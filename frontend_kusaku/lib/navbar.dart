@@ -8,27 +8,37 @@ import 'Navigation/ProfilePage_Kusaku/profile_page.dart';
 import 'Screens/Login_Screen-frontend/login_screen.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  final dynamic pages;
 
+  const MainShell({
+  super.key,
+  this.pages,
+});
+  
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _selectedIndex = 0;
+  
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const FinancePage(),
-    const HistoryPage(),
-    const ProfilePage(),
-  ];
+  late final List<Widget> _pages;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
+void initState() {
+  super.initState();
+
+  _pages = widget.pages;
+      [
+        const HomePage(),
+        const FinancePage(),
+        const HistoryPage(),
+        const ProfilePage(),
+      ];
+
+  WidgetsBinding.instance.addObserver(this);
+}
 
   @override
   void dispose() {
@@ -36,22 +46,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Fires when the app is backgrounded or fully closed.
-  /// We clear is_authenticated so the next open forces re-auth.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      _clearSession();
+      clearSession();
     }
   }
 
-  Future<void> _clearSession() async {
+  Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_authenticated', false);
   }
 
-  void _onNavTapped(int index) {
+  void onNavTapped(int index) {
     if (index == 2) {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const ScanPage()),
@@ -77,7 +85,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ),
       bottomNavigationBar: _KusakuNavBar(
         selectedIndex: _selectedIndex,
-        onTap: _onNavTapped,
+        onTap: onNavTapped,
       ),
     );
   }
@@ -111,6 +119,7 @@ class _KusakuNavBar extends StatelessWidget {
           child: Row(
             children: [
               _NavItem(
+                key: const Key('nav_home'),
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home,
                 label: 'Home',
@@ -118,6 +127,7 @@ class _KusakuNavBar extends StatelessWidget {
                 onTap: () => onTap(0),
               ),
               _NavItem(
+                key: const Key('nav_finance'),
                 icon: Icons.account_balance_wallet_outlined,
                 activeIcon: Icons.account_balance_wallet,
                 label: 'Finance',
@@ -158,6 +168,7 @@ class _KusakuNavBar extends StatelessWidget {
                 ),
               ),
               _NavItem(
+                key: const Key('nav_history'),
                 icon: Icons.history_outlined,
                 activeIcon: Icons.history,
                 label: 'History',
@@ -165,6 +176,7 @@ class _KusakuNavBar extends StatelessWidget {
                 onTap: () => onTap(3),
               ),
               _NavItem(
+                key: const Key('nav_profile'),
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Profile',
@@ -187,6 +199,7 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const _NavItem({
+    super.key,
     required this.icon,
     required this.activeIcon,
     required this.label,
@@ -201,6 +214,7 @@ class _NavItem extends StatelessWidget {
 
     return Expanded(
       child: GestureDetector(
+        key: const Key('nav_scan'),
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Column(

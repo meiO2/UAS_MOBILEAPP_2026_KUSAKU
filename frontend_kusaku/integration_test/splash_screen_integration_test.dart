@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-
-// IMPORTANT: Double check these paths match your folder structure perfectly
 import '../../frontend_kusaku/lib/Screens/Splash_Screen-frontend/splash_screen.dart';
 import '../lib/Screens/Login_Screen-frontend/login_screen.dart';
 
