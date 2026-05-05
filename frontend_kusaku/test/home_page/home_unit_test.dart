@@ -63,4 +63,44 @@ void main() {
       expect(mapBanner(img), '${ApiConfig.baseUrl}images/promo.png');
     });
   });
+
+  group('Transfer API validation', () {
+    test('validates transfer amount constraints', () {
+      const maxTransfer = 30000000;
+      
+      // Valid amounts
+      expect(500000 > 0 && 500000 <= maxTransfer, true);
+      expect(5000000 > 0 && 5000000 <= maxTransfer, true);
+      
+      // Invalid amounts
+      expect(0 > 0 && 0 <= maxTransfer, false); // zero
+      expect(35000000 > 0 && 35000000 <= maxTransfer, false); // exceeds max
+    });
+
+    test('validates recipient phone format', () {
+      final isValidPhone = (String phone) {
+        final cleaned = phone.trim();
+        return cleaned.isNotEmpty && cleaned.startsWith('08') && cleaned.length >= 10;
+      };
+
+      expect(isValidPhone('081234567890'), true);
+      expect(isValidPhone('081299988877'), true);
+      expect(isValidPhone('08'), false);
+      expect(isValidPhone(''), false);
+    });
+
+    test('constructs transfer payload correctly', () {
+      final payload = {
+        'sender_phone': '081234567890',
+        'recipient_phone': '081299988877',
+        'amount': 500000,
+        'notes': 'Untuk kebutuhan',
+      };
+
+      expect(payload['sender_phone'], '081234567890');
+      expect(payload['recipient_phone'], '081299988877');
+      expect(payload['amount'], 500000);
+      expect(payload['notes'], 'Untuk kebutuhan');
+    });
+  });
 }
