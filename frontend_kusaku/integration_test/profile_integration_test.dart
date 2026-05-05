@@ -316,6 +316,18 @@ void main() {
       expect(find.text('Atur Keuangan dengan Mudah'), findsOneWidget);
       expect(find.text('Pencatatan Keuangan Otomatis'), findsOneWidget);
       expect(find.text('Keamanan Lebih terjamin'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Syarat dan Ketentuan'));
+      await tester.pumpAndSettle();
+      expect(find.text('Syarat dan Ketentuan'), findsOneWidget);
+      expect(find.text('1. Definisi:'), findsOneWidget);
+      expect(find.textContaining('∘ Aplikasi Kusaku: Platform dompet digital'),
+          findsOneWidget);
+      expect(find.text('Email:'), findsOneWidget);
+      expect(find.text('[support@Kusaku.com]'), findsOneWidget);
     });
 
     testWidgets('opens sign out confirmation dialog', (tester) async {

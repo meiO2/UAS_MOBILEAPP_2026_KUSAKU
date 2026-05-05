@@ -10,6 +10,7 @@ import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/keuntungan_kusaku_
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/kusaku_points_page.dart';
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/kusaku_stamp_page.dart';
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/profile_page.dart';
+import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/syarat_ketentuan_page.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -339,6 +340,47 @@ void main() {
       expect(find.text('KADALUARSA'), findsOneWidget);
       expect(find.text('Tukar Sekarang'), findsNothing);
       expect(find.text('Poin Tidak Cukup'), findsNothing);
+    });
+  });
+
+  group('Syarat dan Ketentuan', () {
+    testWidgets('shows terms title, sections, subtitle, and body text',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpWithOverrides(
+        tester,
+        const MaterialApp(home: SyaratKetentuanPage()),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Syarat dan Ketentuan'), findsOneWidget);
+      expect(find.text('[Terakhir diperbarui: 19 Februari 2026]\n'),
+          findsOneWidget);
+
+      // Section titles (_SectionTitle)
+      expect(find.text('1. Definisi:'), findsOneWidget);
+      expect(find.text('6. Biaya Layanan:'), findsOneWidget);
+      expect(find.text('14. Persetujuan Pengguna:'), findsOneWidget);
+
+      // Subtitle blocks (_Subtitle)
+      expect(find.textContaining(
+              'Selamat datang di aplikasi Kusaku. Syarat dan Ketentuan ini mengatur penggunaan layanan dompet digital')
+          , findsOneWidget);
+      expect(find.text('Untuk menggunakan Kusaku, pengguna hrus:'),
+          findsOneWidget);
+
+      // Body blocks (_Body)
+      expect(find.textContaining('∘ Aplikasi Kusaku: Platform dompet digital'),
+          findsOneWidget);
+      expect(find.textContaining('∘ Top-up saldo'), findsOneWidget);
+      expect(find.textContaining('∘ Gangguan layanan akibat jaringan internet'),
+          findsOneWidget);
+
+      expect(find.text('Email:'), findsOneWidget);
+      expect(find.text('[support@Kusaku.com]'), findsOneWidget);
     });
   });
 }

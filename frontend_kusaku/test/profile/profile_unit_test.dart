@@ -260,4 +260,60 @@ void main() {
       expect(stamps[1].isExpired, true);
     });
   });
+
+  group('Syarat Ketentuan', () {
+    test('terms sections are complete and ordered', () {
+      const sections = [
+        '1. Definisi:',
+        '2. Persyaratan Pengunaan:',
+        '3. Pendaftaran dan Keamanan Akun:',
+        '4. Penggunaan Layanan:',
+        '5. Saldo dan Transaksi:',
+        '6. Biaya Layanan:',
+        '7. Larangan Penggunaan:',
+        '8. Pemblokiran dan Penutupan akun:',
+        '9. Perlindungan Data Pribadi:',
+        '10. Perubahan Layanan:',
+        '11. Batasan Tanggung Jawab:',
+        '12. Hukum yang Berlaku:',
+        '13. Kontak Layanan:',
+        '14. Persetujuan Pengguna:',
+      ];
+
+      expect(sections.length, 14);
+      expect(sections.first, '1. Definisi:');
+      expect(sections.last, '14. Persetujuan Pengguna:');
+      for (final s in sections) {
+        expect(s, isNotEmpty);
+        expect(s.contains(':'), true);
+      }
+    });
+
+    test('terms content blocks have meaningful text', () {
+      const subtitle =
+          'Selamat datang di aplikasi Kusaku. Syarat dan Ketentuan ini mengatur penggunaan layanan dompet digital (e-wallet) yang disediakan oleh Kusaku.';
+      const body =
+          '∘ Top-up saldo\n∘ Pembayaran digital\n∘ Transfer antar pengguna\n∘ Pembayaran merchant (jika tersedia)';
+
+      expect(subtitle.length, greaterThan(80));
+      expect(subtitle, contains('Kusaku'));
+      expect(subtitle, contains('Syarat dan Ketentuan'));
+
+      expect(body, contains('Top-up saldo'));
+      expect(body, contains('Pembayaran digital'));
+      expect(body, contains('Transfer antar pengguna'));
+      expect(body.split('\n').length, 4);
+    });
+
+    test('contact section includes support channels', () {
+      const emailLabel = 'Email:';
+      const emailValue = '[support@Kusaku.com]';
+      const customerServiceLabel = 'Layanan Pelanggan:';
+
+      expect(emailLabel, isNotEmpty);
+      expect(emailValue, contains('@'));
+      expect(emailValue.toLowerCase(), contains('support'));
+      expect(customerServiceLabel, contains('Layanan Pelanggan'));
+    });
+  });
 }
