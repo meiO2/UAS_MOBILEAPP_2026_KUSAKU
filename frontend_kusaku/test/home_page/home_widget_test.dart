@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../lib/Navigation/HomePage_Kusaku/home_page.dart';
 import '../../lib/Navigation/HomePage_Kusaku/qris_kita_page.dart';
 import '../../lib/Navigation/HomePage_Kusaku/topup_page.dart';
+import '../../lib/Navigation/HomePage_Kusaku/topup_pulsa_page.dart';
 import '../../lib/Navigation/HomePage_Kusaku/transfer_page.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
@@ -345,6 +346,27 @@ void main() {
       expect(find.text('Budi'), findsOneWidget);
       expect(find.text('081299988877'), findsOneWidget);
     });
+
+    testWidgets('walks through transfer flow until recipient details', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpWithOverrides(
+        tester,
+        const MaterialApp(home: TransferPage()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Kusaku').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Budi').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tujuan Transfer'), findsOneWidget);
+      expect(find.text('Jumlah'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Konfirmasi'), findsOneWidget);
+    });
   });
 
   group('_ConfirmBlock widget', () {
@@ -426,6 +448,37 @@ void main() {
       expect(find.text('Rp 500.000'), findsOneWidget);
       expect(find.text('Tujuan'), findsOneWidget);
       expect(find.text('081299988877'), findsOneWidget);
+    });
+  });
+
+  group('Pin bottom sheet', () {
+    testWidgets('accepts 6 digits and triggers success callback', (tester) async {
+      var success = false;
+
+      await tester.binding.setSurfaceSize(const Size(1080, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PinBottomSheet(
+              onSuccess: () => success = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Masukan PIN'), findsOneWidget);
+
+      for (final digit in ['1', '2', '3', '4', '5', '6']) {
+        await tester.tap(find.text(digit).first);
+        await tester.pump();
+      }
+
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(success, isTrue);
+      expect(find.text('*'), findsWidgets);
     });
   });
 }

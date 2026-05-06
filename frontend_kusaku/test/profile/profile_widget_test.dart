@@ -10,7 +10,10 @@ import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/keuntungan_kusaku_
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/kusaku_points_page.dart';
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/kusaku_stamp_page.dart';
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/profile_page.dart';
+import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/pusat_bantuan_page.dart';
 import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/syarat_ketentuan_page.dart';
+import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/kebijakan_privasi_page.dart';
+import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/panduan_kusaku_page.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -379,6 +382,50 @@ void main() {
       expect(find.textContaining('∘ Gangguan layanan akibat jaringan internet'),
           findsOneWidget);
 
+      expect(find.text('Email:'), findsOneWidget);
+      expect(find.text('[support@Kusaku.com]'), findsOneWidget);
+    });
+  });
+
+  group('Profile public guide pages', () {
+    testWidgets('PusatBantuanPage expands transfer help content', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: PusatBantuanPage()),
+      );
+
+      expect(find.text('Pusat Bantuan'), findsOneWidget);
+      await tester.tap(find.text('Transfer'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bagaimana cara melakukan transfer ke sesama pengguna Kusaku?'), findsOneWidget);
+      await tester.tap(find.text('Bagaimana cara melakukan transfer ke sesama pengguna Kusaku?'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Apa saja metode transfer yang tersedia?'), findsOneWidget);
+    });
+
+    testWidgets('PanduanKusakuPage expands Kusaku Stamp steps', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: PanduanKusakuPage()),
+      );
+
+      expect(find.text('Panduan'), findsOneWidget);
+      expect(find.text('Pakai Kusaku semua jadi mudah'), findsOneWidget);
+
+      await tester.tap(find.text('Kusaku Stamp'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lakukan transaksi untuk mendapatkan Kusaku Points'), findsOneWidget);
+      expect(find.text('Klaim Kupon Mu'), findsOneWidget);
+    });
+
+    testWidgets('KebijakanPrivasiPage shows privacy content', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: KebijakanPrivasiPage()),
+      );
+
+      expect(find.text('Kebijakan Privasi'), findsOneWidget);
+      expect(find.textContaining('melindungi privasi dan keamanan data pribadi pengguna'), findsOneWidget);
       expect(find.text('Email:'), findsOneWidget);
       expect(find.text('[support@Kusaku.com]'), findsOneWidget);
     });
