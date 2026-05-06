@@ -7,13 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class UbahProfilePage extends StatefulWidget {
-  final Future<Map<String, dynamic>> Function()? mockLoader; // 👈 ADD
+  final Future<Map<String, dynamic>> Function()? mockLoader;
 
   const UbahProfilePage({
     super.key,
     this.mockLoader,
   });
-  
+
   @override
   State<UbahProfilePage> createState() => _UbahProfilePageState();
 }
@@ -40,59 +40,62 @@ class _UbahProfilePageState extends State<UbahProfilePage> {
     super.dispose();
   }
 
-Future<void> _loadProfile() async {
-  try {
-    // 👇 keep this FIRST
-    final prefs = await SharedPreferences.getInstance();
-    _userId = prefs.getInt('user_id');
+  Future<void> _loadProfile() async {
+    try {
+      // CHECK MOCK FIRST — before touching SharedPreferences
+      if (widget.mockLoader != null) {
+        final data = await widget.mockLoader!();
+        if (!mounted) return;
+        setState(() {
+          _namaController.text = data['username'] ?? '';
+          _nomorHP = data['phone_number'] ?? '';
+          _email = data['email'] ?? '';
+          _isLoading = false;
+        });
+        return;
+      }
 
-    if (_userId == null) {
+      // Original flow
+      final prefs = await SharedPreferences.getInstance();
+      _userId = prefs.getInt('user_id');
+
+      if (_userId == null) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = 'User tidak ditemukan. Silakan login ulang.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}users/profile/$_userId/'),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _namaController.text = data['username'] ?? '';
+          _nomorHP = data['phone_number'] ?? '';
+          _email = data['email'] ?? '';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Gagal memuat profil. Coba lagi.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = 'User tidak ditemukan. Silakan login ulang.';
+        _errorMessage = 'Koneksi gagal: $e';
         _isLoading = false;
       });
-      return;
     }
-
-    // 👇 ADD MOCK HERE (INSIDE try)
-    if (widget.mockLoader != null) {
-      final data = await widget.mockLoader!();
-
-      setState(() {
-        _namaController.text = data['username'] ?? '';
-        _nomorHP = data['phone_number'] ?? '';
-        _email = data['email'] ?? '';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // 👇 ORIGINAL API CALL (unchanged)
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}users/profile/$_userId/'),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        _namaController.text = data['username'] ?? '';
-        _nomorHP = data['phone_number'] ?? '';
-        _email = data['email'] ?? '';
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _errorMessage = 'Gagal memuat profil. Coba lagi.';
-        _isLoading = false;
-      });
-    }
-  } catch (e) {
-    setState(() {
-      _errorMessage = 'Koneksi gagal: $e';
-      _isLoading = false;
-    });
   }
-}
 
   void _showError(String message) {
     if (!mounted) return;
@@ -148,8 +151,8 @@ Future<void> _loadProfile() async {
             const Text(
               'Kamu akan memutuskan aplikasi lain yang\nsebelumnya terhubung dengan akun\nKusaku',
               textAlign: TextAlign.center,
-              style:
-                  TextStyle(fontSize: 12, color: Color(0xFF6B7280), height: 1.5),
+              style: TextStyle(
+                  fontSize: 12, color: Color(0xFF6B7280), height: 1.5),
             ),
             const SizedBox(height: 20),
             Row(
@@ -171,8 +174,10 @@ Future<void> _loadProfile() async {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const UbahNomorPage())).then((_) => _loadProfile());
+                      Navigator.of(context)
+                          .push(MaterialPageRoute(
+                              builder: (_) => const UbahNomorPage()))
+                          .then((_) => _loadProfile());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1D4ED8),
@@ -207,7 +212,6 @@ Future<void> _loadProfile() async {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF1D4ED8)))
@@ -246,7 +250,8 @@ Future<void> _loadProfile() async {
                             Container(
                               width: double.infinity,
                               color: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 28),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 28),
                               child: Center(
                                 child: Container(
                                   width: 80,
@@ -336,8 +341,8 @@ Future<void> _loadProfile() async {
                                         style: TextButton.styleFrom(
                                           padding: EdgeInsets.zero,
                                           minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
+                                          tapTargetSize: MaterialTapTargetSize
+                                              .shrinkWrap,
                                         ),
                                         child: const Text('Ubah',
                                             style: TextStyle(
@@ -376,16 +381,16 @@ Future<void> _loadProfile() async {
                                       ),
                                       TextButton(
                                         onPressed: () =>
-                                            Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const UbahEmailPage()),
-                                        ).then((_) => _loadProfile()),
+                                            Navigator.of(context)
+                                                .push(MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        const UbahEmailPage()))
+                                                .then((_) => _loadProfile()),
                                         style: TextButton.styleFrom(
                                           padding: EdgeInsets.zero,
                                           minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
+                                          tapTargetSize: MaterialTapTargetSize
+                                              .shrinkWrap,
                                         ),
                                         child: const Text('Ubah',
                                             style: TextStyle(
@@ -410,29 +415,19 @@ Future<void> _loadProfile() async {
                       child: SizedBox(
                         width: double.infinity,
                         height: 50,
-                        // child: ElevatedButton(
-                        //   onPressed: _isSaving ? null : _onSimpan,
-                        //   style: ElevatedButton.styleFrom(
-                        //     backgroundColor: const Color(0xFF1D4ED8),
-                        //     foregroundColor: Colors.white,
-                        //     shape: RoundedRectangleBorder(
-                        //         borderRadius: BorderRadius.circular(30)),
-                        //     elevation: 0,
-                        //   ),
-                          child: _isSaving
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2.5),
-                                )
-                              : const Text('Simpan',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16)),
-                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2.5),
+                              )
+                            : const Text('Simpan',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16)),
                       ),
-                    // ),
+                    ),
                   ],
                 ),
     );

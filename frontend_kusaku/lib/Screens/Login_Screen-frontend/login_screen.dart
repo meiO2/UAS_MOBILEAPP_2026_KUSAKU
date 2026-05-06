@@ -192,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.only(bottom: 12),
           child: Column(
             children: [
-              KusakuAuthHeader(
+              const KusakuAuthHeader(
                 logoAsset: 'assets/images/Logo.png',
                 titleAsset: 'assets/images/KUSAKU.png',
               ),
@@ -262,7 +262,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onPressed: _handleLogin,
                                   ),
                           ),
-                          // FIX 2: Fingerprint icon removed — runs silently on app init
                           const SizedBox(height: 20),
                           const Divider(
                             thickness: 2,
@@ -282,8 +281,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               const Text(
                                 "Don't have an account yet? ",

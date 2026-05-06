@@ -206,8 +206,10 @@ void main() {
         (tester) async {
       await tester.pumpWidget(wrap(const LoginScreen()));
       await tester.pumpAndSettle();
+      await tester.binding.setSurfaceSize(const Size(412, 896));
 
       // The phone field is readOnly with an onTap that pushes PhoneSignInScreen
+      await tester.ensureVisible(find.byType(TextField).last);
       await tester.tap(find.byType(TextField).last);
       await tester.pumpAndSettle();
 
@@ -323,8 +325,11 @@ void main() {
       await tester.tap(find.text('Go'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
+      // from: find.byIcon(Icons.arrow_back)  or whatever U+0E092 is
+      // to:
+      await tester.tap(find.byType(BackButton));
+      // or
+      await tester.tap(find.byTooltip('Back'));
 
       expect(popped, isTrue);
     });

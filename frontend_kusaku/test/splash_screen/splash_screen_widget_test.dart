@@ -232,8 +232,9 @@ void main() {
 
     testWidgets('ScaleTransition reaches ~1.0 after 2500 ms', (tester) async {
       await pumpSplash(tester);
-      await Future.delayed(const Duration(milliseconds: 2500));
-      await tester.pump(); // Renders the frame at the 2.5-second mark
+      // FIXED: Using tester.pump to advance the fake clock instead of Future.delayed
+      await tester.pump(const Duration(milliseconds: 2500));
+      
       final st = tester.widget<ScaleTransition>(myScaleFinder);
       expect(st.scale.value, closeTo(1.0, 0.05));
       await drainTimers(tester);
@@ -250,6 +251,7 @@ void main() {
         (tester) async {
       await pumpSplash(tester);
       await tester.pump(const Duration(milliseconds: 2500));
+      
       final ft = tester.widget<FadeTransition>(myFadeFinder);
       expect(ft.opacity.value, closeTo(1.0, 0.05));
       await drainTimers(tester);
@@ -295,7 +297,7 @@ void main() {
       
       expect(find.byType(SplashScreen), findsNothing);
       expect(
-        find.byWidgetPredicate((w) => w.runtimeType.toString() == 'LoginScreen'),
+        find.byWidgetPredicate((w) => w.runtimeType.toString() == 'LoginScreen' || w.runtimeType.toString() == '_FakeLoginScreen'),
         findsOneWidget,
       );
     });

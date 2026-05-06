@@ -95,35 +95,46 @@ class _ChatSiPintarPageState extends State<ChatSiPintarPage> {
   Future<void> _init() async {
     await _loadUser();
 
+    if (!mounted) return; // ← guard after every await
+
     if (_userId != null) {
       await _loadCategories(_userId!);
     } else {
-      setState(() => _isLoadingCategories = false);
+      if (mounted) setState(() => _isLoadingCategories = false);
     }
 
+    if (!mounted) return; // ← guard before addPostFrameCallback
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return; // ← guard at the very start of the callback
+
       _addSiPintarMessage(
         text: 'Halo pejuang rupiah! Yuk, atur finansialmu sebaik mungkin.',
       );
 
       if (_userId != null) {
+        if (!mounted) return;
         setState(() => _isTyping = true);
         _scrollToBottom();
 
         try {
           final budgetResponse = await ChatService.getInitialBudget(_userId!);
 
+          if (!mounted) return; // ← guard after every await inside callback
           setState(() => _isTyping = false);
 
-          if (budgetResponse.type == 'budget_suggestion' && budgetResponse.data != null) {
+          if (budgetResponse.type == 'budget_suggestion' &&
+              budgetResponse.data != null) {
             _applyBudgetSuggestion(budgetResponse.data!);
           }
 
+          if (!mounted) return;
           _addSiPintarMessage(
             text: "Aku sudah siapkan rekomendasi budget awal untuk kamu 😊",
             showPreferences: true,
           );
         } catch (e) {
+          if (!mounted) return; // ← guard in catch too
           setState(() => _isTyping = false);
           _addSiPintarMessage(
             text: 'Ini kategori kamu saat ini. Kamu bisa atur sendiri ya! 😊',

@@ -132,7 +132,8 @@ class _MockHttpClientRequest implements HttpClientRequest {
   }
 
   @override
-  void write(Object? object) => _bodyBytes.addAll(utf8.encode(object.toString()));
+  void write(Object? object) =>
+      _bodyBytes.addAll(utf8.encode(object.toString()));
 
   @override
   void writeAll(Iterable objects, [String separator = '']) {
@@ -155,7 +156,8 @@ class _MockHttpClientRequest implements HttpClientRequest {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _MockHttpClientResponse extends Stream<List<int>> implements HttpClientResponse {
+class _MockHttpClientResponse extends Stream<List<int>>
+    implements HttpClientResponse {
   _MockHttpClientResponse(this.statusCode, String body)
       : _stream = Stream<List<int>>.value(utf8.encode(body));
 
@@ -222,12 +224,16 @@ _MockRouteResponse _routeResponse(String method, Uri uri, String body) {
     return const _MockRouteResponse(200, '[{"id":1,"name":"Hiburan"}]');
   }
 
-  if (method == 'GET' && path.contains('/transfer/') && path.endsWith('/history/')) {
-    return const _MockRouteResponse(200, '[{"direction":"sent","counterpart_phone":"081299988877","counterpart_name":"Budi"}]');
+  if (method == 'GET' &&
+      path.contains('/transfer/') &&
+      path.endsWith('/history/')) {
+    return const _MockRouteResponse(200,
+        '[{"direction":"sent","counterpart_phone":"081299988877","counterpart_name":"Budi"}]');
   }
 
   if (method == 'GET' && path.contains('/transfer/lookup/')) {
-    return const _MockRouteResponse(200, '{"phone_number":"081288877766","name":"Andi"}');
+    return const _MockRouteResponse(
+        200, '{"phone_number":"081288877766","name":"Andi"}');
   }
 
   if (method == 'POST' && path.contains('/transfer/')) {
@@ -243,12 +249,14 @@ _MockRouteResponse _routeResponse(String method, Uri uri, String body) {
   }
 
   if (method == 'GET' && path.contains('/users/profile/')) {
-    return const _MockRouteResponse(200, '{"phone_number":"081234567890","username":"Test User"}');
+    return const _MockRouteResponse(
+        200, '{"phone_number":"081234567890","username":"Test User"}');
   }
 
   return const _MockRouteResponse(404, '{"error":"not found"}');
 }
 
+// ============ Helper: pump without pumpAndSettle to avoid hanging on animations ============
 Future<void> _pumpWithOverrides(
   WidgetTester tester,
   Widget child,
@@ -256,12 +264,22 @@ Future<void> _pumpWithOverrides(
   await HttpOverrides.runZoned(() async {
     await tester.pumpWidget(child);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(seconds: 3));
   }, createHttpClient: (_) => _MockHttpClient());
+}
+
+/// Pumps enough frames to let async data load without hanging on
+/// infinite animations (e.g. CircularProgressIndicator).
+Future<void> _settle(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 3));
 }
 
 // ============ Integration Tests ============
 void main() {
+  // Ensure Flutter bindings are ready before any plugin is used.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
     HttpOverrides.global = _MockHttpOverrides();
     SharedPreferences.setMockInitialValues({
@@ -279,30 +297,30 @@ void main() {
     testWidgets(
         'Complete transfer flow: select method → see recent recipient',
         (tester) async {
-          await tester.binding.setSurfaceSize(const Size(1080, 1920));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
-          // Start at HomePage
-          await _pumpWithOverrides(tester, const MaterialApp(home: HomePage()));
-          await tester.pumpAndSettle();
+      // Start at HomePage
+      await _pumpWithOverrides(tester, const MaterialApp(home: HomePage()));
+      await _settle(tester);
 
-          // Verify HomePage loaded
-          expect(find.text('Kusaku'), findsWidgets);
-          expect(find.byType(RefreshIndicator), findsOneWidget);
+      // Verify HomePage loaded
+      expect(find.text('Kusaku'), findsWidgets);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
 
-          // Tap Transfer quick action
-          await tester.tap(find.text('Transfer').last);
-          await tester.pumpAndSettle();
+      // Tap Transfer quick action
+      await tester.tap(find.text('Transfer').last);
+      await _settle(tester);
 
-          // Now at TransferPage, verify initial step shows methods
-          expect(find.text('Kusaku'), findsWidgets);
-          expect(find.text('Bank Lain'), findsOneWidget);
-          expect(find.text('Virtual\nAccount'), findsOneWidget);
+      // Now at TransferPage, verify initial step shows methods
+      expect(find.text('Kusaku'), findsWidgets);
+      expect(find.text('Bank Lain'), findsOneWidget);
+      expect(find.text('Virtual\nAccount'), findsOneWidget);
 
-          // Verify recent recipients loaded
-          expect(find.text('Budi'), findsOneWidget);
-          expect(find.text('081299988877'), findsOneWidget);
-        });
+      // Verify recent recipients loaded
+      expect(find.text('Budi'), findsOneWidget);
+      expect(find.text('081299988877'), findsOneWidget);
+    });
 
     testWidgets('TopUp page flow: open → show methods', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1080, 1920));
@@ -310,11 +328,11 @@ void main() {
 
       // Start at HomePage
       await _pumpWithOverrides(tester, const MaterialApp(home: HomePage()));
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Tap TopUp quick action
       await tester.tap(find.text('Top Up').last);
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Now at TopUpPage
       expect(find.text('Top Up'), findsOneWidget);
@@ -333,11 +351,11 @@ void main() {
 
       // Start at HomePage
       await _pumpWithOverrides(tester, const MaterialApp(home: HomePage()));
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Tap QrisKita quick action
       await tester.tap(find.text('Qris Kita').last);
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Now at QrisKitaPage
       expect(find.text('Qris Kita'), findsOneWidget);
@@ -346,7 +364,7 @@ void main() {
 
       // Go back
       await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Should be back at HomePage
       expect(find.text('Kusaku'), findsWidgets);
@@ -361,6 +379,7 @@ void main() {
         tester,
         const MaterialApp(home: TransferPage()),
       );
+      await _settle(tester);
 
       // Verify method buttons render
       expect(find.text('Kusaku'), findsWidgets);
@@ -369,9 +388,6 @@ void main() {
       // Verify recent recipients loaded from mock
       expect(find.text('Budi'), findsOneWidget);
       expect(find.text('081299988877'), findsOneWidget);
-
-      // Wait for any async operations
-      await tester.pumpAndSettle();
 
       // Verify still on transfer page
       expect(find.byType(TransferPage), findsOneWidget);
@@ -385,9 +401,7 @@ void main() {
         tester,
         const MaterialApp(home: TopUpPage()),
       );
-
-      // Wait for user data to load
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Verify methods loaded
       expect(find.text('Pulsa'), findsOneWidget);
@@ -408,6 +422,7 @@ void main() {
         tester,
         const MaterialApp(home: QrisKitaPage(userId: 77)),
       );
+      await _settle(tester);
 
       // Verify QrisKita page loaded
       expect(find.text('Qris Kita'), findsOneWidget);
@@ -415,10 +430,7 @@ void main() {
 
       // Tap back button
       await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
-
-      // Back button should pop the screen
-      // (In integration, this would go to previous route)
+      await _settle(tester);
     });
 
     testWidgets('Transfer → recent recipients data loads correctly',
@@ -436,9 +448,7 @@ void main() {
         tester,
         const MaterialApp(home: TransferPage()),
       );
-
-      // Wait for async data load
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Verify mock data loaded
       expect(find.text('Budi'), findsOneWidget);
@@ -458,8 +468,7 @@ void main() {
         tester,
         const MaterialApp(home: TopUpPage()),
       );
-
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       // Verify session loaded correctly
       expect(find.text('Kode Kusaku: 081234567890'), findsOneWidget);

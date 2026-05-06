@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Login_Screen-frontend/login_screen.dart';
 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -10,11 +11,14 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _sequenceController; 
-  late AnimationController _rotationController; 
+  late AnimationController _sequenceController;
+  late AnimationController _rotationController;
 
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+
+  Timer? _navTimer;
+
 
   @override
   void initState() {
@@ -56,25 +60,27 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       }
     });
 
-    Timer(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-            transitionDuration: Duration.zero,
-            reverseTransitionDuration: Duration.zero,
-          ),
-        );
-      }
+    _navTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
     });
   }
 
+
   @override
   void dispose() {
+    _navTimer?.cancel();
     _sequenceController.dispose();
     _rotationController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {

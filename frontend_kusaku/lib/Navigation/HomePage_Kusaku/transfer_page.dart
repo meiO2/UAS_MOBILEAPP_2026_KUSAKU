@@ -219,6 +219,7 @@ _loadRecentRecipients();
     final prefPhone = widget.prefilledRecipientPhone;
     final prefName  = widget.prefilledRecipientName;
     if (prefPhone != null && prefPhone.isNotEmpty) {
+      if (!mounted) return;
       setState(() {
         _selectedMethod = 'Kusaku';
         _recipientCode  = prefPhone;

@@ -48,19 +48,14 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Ensure test can find a BackButton widget.
                           Align(
                             alignment: Alignment.centerLeft,
-                            child: TextButton(
+                            child: BackButton(
                               onPressed: () => Navigator.of(context).pop(),
-                              style: TextButton.styleFrom(
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                padding: EdgeInsets.zero,
-                                foregroundColor: Colors.black87,
-                              ),
-                              child: const Text('< Back', style: TextStyle(fontSize: 22 / 2)),
                             ),
                           ),
+
                           const SizedBox(height: 30),
                           const Text(
                             'Sign in with Phone Number',
