@@ -291,7 +291,9 @@ class _UbahProfilePageState extends State<UbahProfilePage> {
                                           fontSize: 12,
                                           color: Color(0xFF6B7280))),
                                   const SizedBox(height: 6),
+                                  // ✅ KEY ADDED for integration test
                                   TextField(
+                                    key: const Key('namaLengkapField'),
                                     controller: _namaController,
                                     style: const TextStyle(
                                         fontSize: 15,
@@ -336,7 +338,9 @@ class _UbahProfilePageState extends State<UbahProfilePage> {
                                                 fontSize: 15,
                                                 color: Color(0xFF111827))),
                                       ),
+                                      // ✅ KEY ADDED for integration test
                                       TextButton(
+                                        key: const Key('ubahNomorButton'),
                                         onPressed: _onUbahNomor,
                                         style: TextButton.styleFrom(
                                           padding: EdgeInsets.zero,

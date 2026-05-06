@@ -8,73 +8,122 @@ import 'package:frontend_kusaku/Navigation/ProfilePage_Kusaku/ubah_profile_page.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('UbahProfilePage full flow (mocked, no API)', (tester) async {
-  SharedPreferences.setMockInitialValues({
-    'user_id': 1,
+  const mockUsername    = 'Leon';
+  const mockPhone       = '08123456789';
+  const mockEmail       = 'leon@test.com';
+  const updatedUsername = 'Leon Updated';
+
+  Future<void> pumpPage(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 1});
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UbahProfilePage(
+          mockLoader: () async => {
+            'username':     mockUsername,
+            'phone_number': mockPhone,
+            'email':         mockEmail,
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('shows profile data after load', (tester) async {
+    await pumpPage(tester);
+
+    expect(find.text(mockUsername), findsOneWidget);
+    expect(find.text(mockPhone),    findsOneWidget);
+    expect(find.text(mockEmail),    findsOneWidget);
   });
 
-  await tester.pumpWidget(
-    MaterialApp(
-      home: UbahProfilePage(
-        mockLoader: () async => {
-          'username': 'Leon',
-          'phone_number': '08123456789',
-          'email': 'leon@test.com',
-        },
-      ),
-    ),
-  );
+  testWidgets('can edit nama lengkap field', (tester) async {
+    await pumpPage(tester);
 
-  await tester.pumpAndSettle();
+    final nameField = find.byKey(const Key('namaLengkapField'));
+    expect(nameField, findsOneWidget);
 
-  // ✅ Initial data
-  expect(find.text('Leon'), findsOneWidget);
-  expect(find.text('08123456789'), findsOneWidget);
-  expect(find.text('leon@test.com'), findsOneWidget);
+    await tester.tap(nameField);
+    await tester.pumpAndSettle();
 
-  // ✏️ Edit name
-  final nameField = find.descendant(
-    of: find.text('Nama Lengkap'),
-    matching: find.byType(TextField),
-  );
+    await tester.enterText(nameField, updatedUsername);
+    await tester.pump();
 
-  await tester.tap(nameField);
-  await tester.enterText(nameField, 'Leon Updated');
-  await tester.pump();
+    expect(find.text(updatedUsername), findsOneWidget);
+  });
 
-  expect(find.text('Leon Updated'), findsOneWidget);
+  testWidgets('ubah nomor dialog opens and can be cancelled', (tester) async {
+    await pumpPage(tester);
 
-  // 📱 Open "Ubah Nomor"
-  final ubahNomorButton = find.descendant(
-    of: find.text('Nomor HP'),
-    matching: find.text('Ubah'),
-  );
+    await tester.tap(find.byKey(const Key('ubahNomorButton')));
+    await tester.pumpAndSettle();
 
-  await tester.tap(ubahNomorButton);
-  await tester.pumpAndSettle();
+    expect(find.text('Yakin mau ubah nomor HP?'), findsOneWidget);
 
-  expect(find.text('Yakin mau ubah nomor HP?'), findsOneWidget);
+    await tester.tap(find.text('Ga jadi deh'));
+    await tester.pumpAndSettle();
 
-  // Cancel
-  await tester.tap(find.text('Ga jadi deh'));
-  await tester.pumpAndSettle();
-  expect(find.text('Yakin mau ubah nomor HP?'), findsNothing);
+    expect(find.text('Yakin mau ubah nomor HP?'), findsNothing);
+  });
 
-  // Open again
-  await tester.tap(ubahNomorButton);
-  await tester.pumpAndSettle();
+  testWidgets('ubah nomor confirm navigates to UbahNomorPage', (tester) async {
+    await pumpPage(tester);
 
-  // Confirm
-  await tester.tap(find.text('Ya, ubah'));
-  await tester.pumpAndSettle(const Duration(seconds: 1));
+    await tester.tap(find.byKey(const Key('ubahNomorButton')));
+    await tester.pumpAndSettle();
 
-  // 🔥 Better assertion (adjust if needed)
-  expect(find.text('Ubah Profile'), findsNothing);
+    expect(find.text('Yakin mau ubah nomor HP?'), findsOneWidget);
 
-  // 🔙 Go back
-  await tester.pageBack();
-  await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, ubah'));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
 
-  expect(find.text('Ubah Profile'), findsOneWidget);
-});
+    expect(find.text('Ubah Profile'), findsNothing);
+  });
+
+  testWidgets('full flow passes', (tester) async {
+    await pumpPage(tester);
+
+    expect(find.text(mockUsername), findsOneWidget);
+    expect(find.text(mockPhone),    findsOneWidget);
+    expect(find.text(mockEmail),    findsOneWidget);
+
+    // ── Edit name ──
+    final nameField = find.byKey(const Key('namaLengkapField'));
+    await tester.tap(nameField);
+    await tester.pumpAndSettle();
+    await tester.enterText(nameField, updatedUsername);
+    await tester.pump();
+    expect(find.text(updatedUsername), findsOneWidget);
+
+    // ── Open Ubah Nomor dialog ──
+    final ubahNomorBtn = find.byKey(const Key('ubahNomorButton'));
+    await tester.tap(ubahNomorBtn);
+    await tester.pumpAndSettle();
+    expect(find.text('Yakin mau ubah nomor HP?'), findsOneWidget);
+
+    // ── Cancel ──
+    await tester.tap(find.text('Ga jadi deh'));
+    await tester.pumpAndSettle();
+    expect(find.text('Yakin mau ubah nomor HP?'), findsNothing);
+
+    // ── Open again then confirm ──
+    await tester.tap(ubahNomorBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, ubah'));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // Verify navigation occurred
+    expect(find.text('Ubah Profile'), findsNothing);
+
+    // ── Navigate back manually ──
+    // We use Navigator.pop directly on the build context of the current widget 
+    // to avoid the "Back Button Not Found" error.
+    final BuildContext context = tester.element(find.byType(Navigator));
+    Navigator.pop(context);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ubah Profile'), findsOneWidget);
+  });
 }
