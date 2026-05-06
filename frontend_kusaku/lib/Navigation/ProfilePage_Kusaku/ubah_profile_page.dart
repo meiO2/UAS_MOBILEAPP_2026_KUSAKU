@@ -7,8 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class UbahProfilePage extends StatefulWidget {
-  const UbahProfilePage({super.key});
+  final Future<Map<String, dynamic>> Function()? mockLoader; // 👈 ADD
 
+  const UbahProfilePage({
+    super.key,
+    this.mockLoader,
+  });
+  
   @override
   State<UbahProfilePage> createState() => _UbahProfilePageState();
 }
@@ -35,80 +40,59 @@ class _UbahProfilePageState extends State<UbahProfilePage> {
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _userId = prefs.getInt('user_id');
+Future<void> _loadProfile() async {
+  try {
+    // 👇 keep this FIRST
+    final prefs = await SharedPreferences.getInstance();
+    _userId = prefs.getInt('user_id');
 
-      if (_userId == null) {
-        setState(() {
-          _errorMessage = 'User tidak ditemukan. Silakan login ulang.';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}users/profile/$_userId/'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _namaController.text = data['username'] ?? '';
-          _nomorHP = data['phone_number'] ?? '';
-          _email = data['email'] ?? '';
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Gagal memuat profil. Coba lagi.';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
+    if (_userId == null) {
       setState(() {
-        _errorMessage = 'Koneksi gagal: $e';
+        _errorMessage = 'User tidak ditemukan. Silakan login ulang.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    // 👇 ADD MOCK HERE (INSIDE try)
+    if (widget.mockLoader != null) {
+      final data = await widget.mockLoader!();
+
+      setState(() {
+        _namaController.text = data['username'] ?? '';
+        _nomorHP = data['phone_number'] ?? '';
+        _email = data['email'] ?? '';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    // 👇 ORIGINAL API CALL (unchanged)
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}users/profile/$_userId/'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        _namaController.text = data['username'] ?? '';
+        _nomorHP = data['phone_number'] ?? '';
+        _email = data['email'] ?? '';
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _errorMessage = 'Gagal memuat profil. Coba lagi.';
         _isLoading = false;
       });
     }
+  } catch (e) {
+    setState(() {
+      _errorMessage = 'Koneksi gagal: $e';
+      _isLoading = false;
+    });
   }
-
-  Future<void> _onSimpan() async {
-    if (_userId == null) return;
-
-    setState(() => _isSaving = true);
-
-    try {
-      final response = await http.put(
-        Uri.parse('${ApiConfig.baseUrl}users/profile/update/$_userId/'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': _namaController.text.trim(),
-          'email': _email,
-          'phone_number': _nomorHP,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil berhasil disimpan!'),
-            backgroundColor: Color(0xFF1D4ED8),
-          ),
-        );
-        Navigator.of(context).pop();
-      } else {
-        final data = jsonDecode(response.body);
-        _showError(data['message'] ?? 'Gagal menyimpan profil.');
-      }
-    } catch (e) {
-      _showError('Koneksi gagal: $e');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
+}
 
   void _showError(String message) {
     if (!mounted) return;
@@ -426,15 +410,15 @@ class _UbahProfilePageState extends State<UbahProfilePage> {
                       child: SizedBox(
                         width: double.infinity,
                         height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isSaving ? null : _onSimpan,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1D4ED8),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30)),
-                            elevation: 0,
-                          ),
+                        // child: ElevatedButton(
+                        //   onPressed: _isSaving ? null : _onSimpan,
+                        //   style: ElevatedButton.styleFrom(
+                        //     backgroundColor: const Color(0xFF1D4ED8),
+                        //     foregroundColor: Colors.white,
+                        //     shape: RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.circular(30)),
+                        //     elevation: 0,
+                        //   ),
                           child: _isSaving
                               ? const SizedBox(
                                   width: 22,
@@ -448,7 +432,7 @@ class _UbahProfilePageState extends State<UbahProfilePage> {
                                       fontSize: 16)),
                         ),
                       ),
-                    ),
+                    // ),
                   ],
                 ),
     );
